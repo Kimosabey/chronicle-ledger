@@ -1,0 +1,50 @@
+{
+    "name": "chronicle-ledge",
+    "version": "1.0.0",
+    "description": "Immutable audit ledger with event sourcing, distributed consensus, and high availability",
+    "author": "Harshan Aiyappa <https://github.com/Kimosabey>",
+    "license": "MIT",
+    "private": true,
+    "workspaces": [
+        "services/ledger-api",
+        "services/read-processor",
+        "services/query-api",
+        "ui/dashboard"
+    ],
+    "scripts": {
+        "dev": "concurrently \"npm run dev:ledger\" \"npm run dev:processor\" \"npm run dev:query\" \"npm run dev:ui\"",
+        "dev:ledger": "npm run dev --workspace=services/ledger-api",
+        "dev:processor": "npm run dev --workspace=services/read-processor",
+        "dev:query": "npm run dev --workspace=services/query-api",
+        "dev:ui": "npm run dev --workspace=ui/dashboard",
+        "build": "npm run build --workspaces",
+        "test": "npm run test --workspaces",
+        "lint": "npm run lint --workspaces",
+        "docker:up": "docker-compose up -d",
+        "docker:down": "docker-compose down",
+        "docker:logs": "docker-compose logs -f",
+        "docker:clean": "docker-compose down -v",
+        "simulate": "node scripts/simulate-traffic.js",
+        "simulate:continuous": "node scripts/simulate-traffic.js --continuous",
+        "verify:consistency": "node scripts/verify-consistency.js"
+    },
+    "devDependencies": {
+        "concurrently": "^8.2.2",
+        "node-fetch": "^2.7.0",
+        "pg": "^8.16.3",
+        "typescript": "^5.3.3"
+    },
+    "keywords": [
+        "event-sourcing",
+        "cqrs",
+        "distributed-systems",
+        "cockroachdb",
+        "nats",
+        "high-availability",
+        "audit-ledger"
+    ],
+    "engines": {
+        "node": ">=20.0.0",
+        "npm": ">=10.0.0"
+    }
+}

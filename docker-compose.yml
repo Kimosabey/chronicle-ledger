@@ -1,0 +1,96 @@
+version: '3.8'
+
+# ChronicleLedger Infrastructure
+# Production-ready setup with Event Sourcing + CQRS
+
+services:
+  # ============================================
+  # PRIMARY DATABASE (Event Store + Read Model)
+  # ============================================
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: chronicle-db
+    environment:
+      POSTGRES_USER: chronicle
+      POSTGRES_PASSWORD: chronicle
+      POSTGRES_DB: chronicle
+    ports:
+      - "5433:5432" # Host port 5433
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./infra/postgres-combined/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - chronicle-net
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U chronicle" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # ============================================
+  # EVENT STORE (CockroachDB)
+  # ============================================
+
+  cockroach:
+    image: cockroachdb/cockroach:v23.1.13
+    container_name: chronicle-cockroach
+    command: start-single-node --insecure
+    ports:
+      - "26257:26257"
+      - "8080:8080"
+    volumes:
+      - cockroach-data:/cockroach/cockroach-data
+    networks:
+      - chronicle-net
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/health?ready=1" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # ============================================
+  # MESSAGE BUS (Event Distribution)
+  # ============================================
+
+  nats:
+    image: nats:2.10-alpine
+    container_name: chronicle-nats
+    # Added -m 8222 to enable HTTP monitoring
+    command: [ "-js", "-sd", "/data", "-m", "8222" ]
+    ports:
+      - "4222:4222" # Client connections
+      - "8222:8222" # HTTP monitoring
+    volumes:
+      - nats-data:/data
+    networks:
+      - chronicle-net
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:8222/healthz" ]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+
+# ============================================
+# VOLUMES
+# ============================================
+
+volumes:
+  cockroach-data:
+    name: chronicle-cockroach-data
+  db-data:
+    name: chronicle-db-data
+  nats-data:
+    name: chronicle-nats-data
+
+# ============================================
+# NETWORKS
+# ============================================
+
+networks:
+  chronicle-net:
+    name: chronicle-network
+    driver: bridge
