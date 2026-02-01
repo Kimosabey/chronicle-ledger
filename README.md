@@ -2,75 +2,74 @@
 
 ![Thumbnail](docs/assets/thumbnail.png)
 
-## Modern Event-Sourced Banking System
+## Modern Event-Sourced Banking System with CQRS & CockroachDB
 
 <div align="center">
 
 ![Status](https://img.shields.io/badge/Status-Production_Ready-success?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)
-![Pattern](https://img.shields.io/badge/Pattern-CQRS_Event_Sourcing-6933FF?style=for-the-badge)
+![Pattern](https://img.shields.io/badge/Architecture-CQRS_Event_Sourcing-6933FF?style=for-the-badge&logo=natsdotio&logoColor=white)
 
 </div>
 
-**Chronicle Ledger** is a financial auditing system that prioritizes data integrity above all else. By using **Event Sourcing**, it ensures that no financial data is ever overwritten or lost. It implements **CQRS** to separate high-throughput writes (CockroachDB) from fast reads (PostgreSQL), bridged by **NATS JetStream**.
+**Chronicle Ledger** is a financial auditing system that prioritizes data integrity above all else. By using **Event Sourcing**, it ensures that no financial state is ever overwritten; instead, every transaction is stored as an immutable event. It implements **CQRS** to separate high-throughput writes (CockroachDB) from lightning-fast reads (PostgreSQL), bridged by **NATS JetStream**.
 
 ---
 
 ## 🚀 Quick Start
 
-Run the entire cluster in 2 steps:
+Run the entire distributed ledger (DBs + Bus + APIs) in 2 steps:
 
 ```bash
 # 1. Start Infrastructure
 docker-compose up -d
 
-# 2. Start Services (Write API, Read Processor, Query API, UI)
+# 2. Start Application Services
 npm install && npm run dev
 ```
 
-> **Important**: First run requires DB initialization. See [GETTING_STARTED.md](./docs/GETTING_STARTED.md).
+> **Detailed Setup**: See [GETTING_STARTED.md](./docs/GETTING_STARTED.md).
 
 ---
 
 ## 📸 Demo & Architecture
 
-### Real-Time Dashboard
+### Real-Time Auditor Dashboard
 ![Dashboard](docs/assets/dashboard.png)
-*Live Event Log and Account Materialization*
+*Live event log streaming and account materialization.*
 
 ### System Architecture
 ![Architecture](docs/assets/architecture.png)
-*Write Side (Event Store) -> Async Bus -> Read Side (Projected View)*
+*CQRS Split: Write API (Event Store) -> NATS -> Read Processor -> Projected View.*
 
-### Time-Travel Debugging (Unique Feature)
-![Time Travel](docs/assets/hero_main.png)
-*Querying the exact state of an account at any historical timestamp.*
+### Transaction Workflow
+![Workflow](docs/assets/workflow.png)
+*Step-by-step: Command validation, Event persistence, and View migration.*
 
-> **Deep Dive**: See [ARCHITECTURE.md](./docs/ARCHITECTURE.md) for the Event Schema and Causal Consistency.
+> **Deep Dive**: See [ARCHITECTURE.md](./docs/ARCHITECTURE.md) for Causal Consistency and Schema details.
 
 ---
 
 ## ✨ Key Features
 
-*   **📜 Immutable Event Log**: Uses **CockroachDB** to store append-only financial events.
-*   **⚡ CQRS Pattern**: Separates Write/Read concerns.
-    ![CQRS Pattern](docs/assets/architecture.png)
-*   **⏰ Time-Travel Queries**: "What was the balance at 2:00 PM yesterday?"
-*   **🛡️ Double-Spend Protection**: Strict Optimistic Concurrency Control (OCC).
+*   **📜 Immutable Event Log**: Uses **CockroachDB** to store append-only financial records.
+*   **⚡ CQRS Implementation**: Completely decouples Write Scaling from Read Performance.
+*   **⏰ Time-Travel Debugging**: Ability to query account state at any historical microsecond.
+*   **🛡️ Double-Spend Protection**: Optimistic Concurrency Control (OCC) at the event layer.
+*   **🌊 Async Projection**: NATS JetStream ensures the Read side stays eventually consistent with 100% RELIABILITY.
 
 ---
 
-## 🏗️ The Data Journey
+## 🏗️ The Protective Journey
 
-Understanding how a single click becomes an immutable record:
+How a simple deposit becomes an unhackable record:
 
-![Data Journey](docs/assets/workflow.png)
-
-1.  **Command**: User requests "Deposit $100".
-2.  **Validation**: API checks current version.
-3.  **Event Store**: Event appended to CockroachDB.
-4.  **Propagate**: NATS delivers event to Processors.
-5.  **Project**: PostgreSQL View updated.
+1.  **Command**: User submits "Deposit $100" via the Write API.
+2.  **Verify**: API validates current version (Concurrency check).
+3.  **Persist**: The "Deposited" event is committed to the CockroachDB Event Store.
+4.  **Publish**: NATS JetStream picks up the new event and broadcasts it.
+5.  **Project**: The Read Processor consumes the event and updates the PostgreSQL Materialized View.
+6.  **Query**: The user sees their updated balance instantly via the Query API.
 
 ---
 
@@ -78,10 +77,10 @@ Understanding how a single click becomes an immutable record:
 
 | Document | Description |
 | :--- | :--- |
-| [**System Architecture**](./docs/ARCHITECTURE.md) | Event Schemas, CQRS Design, and Decision Log. |
-| [**Getting Started**](./docs/GETTING_STARTED.md) | Docker setup, DB init, and test scripts. |
-| [**Failure Scenarios**](./docs/FAILURE_SCENARIOS.md) | Handling "Offline Processors" and Partitioning. |
-| [**Interview Q&A**](./docs/INTERVIEW_QA.md) | "Why Event Sourcing?" and "Why CockroachDB?". |
+| [**System Architecture**](./docs/ARCHITECTURE.md) | Event Schemas, NATS topology, and CQRS trade-offs. |
+| [**Getting Started**](./docs/GETTING_STARTED.md) | Docker environment, DB init, and Load tests. |
+| [**Failure Scenarios**](./docs/FAILURE_SCENARIOS.md) | Handling "Offline Processors" and NATS persistence. |
+| [**Interview Q&A**](./docs/INTERVIEW_QA.md) | "Event Sourcing vs CRUD", "Why CockroachDB?". |
 
 ---
 
@@ -89,18 +88,23 @@ Understanding how a single click becomes an immutable record:
 
 | Component | Technology | Role |
 | :--- | :--- | :--- |
-| **Write Store** | **CockroachDB** | Distributed Immutable Log. |
-| **Read Store** | **PostgreSQL** | Materialized Views. |
-| **Messaging** | **NATS JetStream** | Async Event Bus. |
-| **Frontend** | **Next.js 14** | Real-time Audit Dashboard. |
+| **Write Store** | **CockroachDB** | Distributed, Immutable Event Log. |
+| **Read Store** | **PostgreSQL** | High-performance Projected Views. |
+| **Messaging** | **NATS JetStream**| Resilient Async Event Bus. |
+| **Frontend** | **Next.js 14** | Real-time Audit & Visualization. |
 
 ---
 
 ## 👤 Author
 
 **Harshan Aiyappa**  
-Senior Full-Stack Hybrid Engineer  
-[GitHub Profile](https://github.com/Kimosabey)
+Senior Full-Stack Hybrid AI Engineer  
+Voice AI • Distributed Systems • Infrastructure
+
+[![Portfolio](https://img.shields.io/badge/Portfolio-kimo--nexus.vercel.app-00C7B7?style=flat&logo=vercel)](https://kimo-nexus.vercel.app/)
+[![GitHub](https://img.shields.io/badge/GitHub-Kimosabey-black?style=flat&logo=github)](https://github.com/Kimosabey)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Harshan_Aiyappa-blue?style=flat&logo=linkedin)](https://linkedin.com/in/harshan-aiyappa)
+[![X](https://img.shields.io/badge/X-@HarshanAiyappa-black?style=flat&logo=x)](https://x.com/HarshanAiyappa)
 
 ---
 
